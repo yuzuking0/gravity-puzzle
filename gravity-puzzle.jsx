@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef } from "react";
 
-const COLS = 12;
-const ROWS = 15;
+const COLS = 8;
+const ROWS = 8;
 const MATCH = 4;
 
 const GRAVITY_DIRS = ["down", "up", "left", "right"];
