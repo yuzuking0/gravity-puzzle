@@ -54,6 +54,7 @@ function applyGravity(grid, dir) {
 function findMatches(grid) {
   const toRemove = new Set();
   let lines = 0;
+  // 縦4個
   for (let c = 0; c < COLS; c++) {
     let run = 1;
     for (let r = 1; r < ROWS; r++) {
@@ -64,6 +65,18 @@ function findMatches(grid) {
       }
     }
     if (run >= MATCH) { lines++; for (let k = ROWS-run; k < ROWS; k++) toRemove.add(`${k},${c}`); }
+  }
+  // 横4個
+  for (let r = 0; r < ROWS; r++) {
+    let run = 1;
+    for (let c = 1; c < COLS; c++) {
+      if (grid[r][c] && grid[r][c] === grid[r][c-1]) { run++; }
+      else {
+        if (run >= MATCH) { lines++; for (let k = c-run; k < c; k++) toRemove.add(`${r},${k}`); }
+        run = 1;
+      }
+    }
+    if (run >= MATCH) { lines++; for (let k = COLS-run; k < COLS; k++) toRemove.add(`${r},${k}`); }
   }
   return { toRemove, lines };
 }
@@ -119,18 +132,40 @@ export default function GravityPuzzle() {
     }, 380);
   }, []);
 
-  const placeBall = useCallback((col) => {
+  // 重力の反対方向からボールを置く
+  // down/up → 列(col)を選択、left/right → 行(row)を選択
+  const placeBall = useCallback((index) => {
     if (gameOver || processing) return;
-    let row = -1;
-    for (let r = 0; r < ROWS; r++) {
-      if (grid[r][col] === null) { row = r; break; }
-    }
-    if (row === -1) return;
-
+    const dir = nextDir;
     const color = nextColor;
-    const dir   = nextDir;
     const g = grid.map(r => [...r]);
-    g[row][col] = color;
+
+    if (dir === "down") {
+      // 上から落とす → 列indexの最初の空きrow
+      let row = -1;
+      for (let r = 0; r < ROWS; r++) { if (g[r][index] === null) { row = r; break; } }
+      if (row === -1) return;
+      g[row][index] = color;
+    } else if (dir === "up") {
+      // 下から置く → 列indexの最後の空きrow
+      let row = -1;
+      for (let r = ROWS - 1; r >= 0; r--) { if (g[r][index] === null) { row = r; break; } }
+      if (row === -1) return;
+      g[row][index] = color;
+    } else if (dir === "left") {
+      // 右から置く → 行indexの最後の空きcol
+      let col = -1;
+      for (let c = COLS - 1; c >= 0; c--) { if (g[index][c] === null) { col = c; break; } }
+      if (col === -1) return;
+      g[index][col] = color;
+    } else {
+      // right: 左から置く → 行indexの最初の空きcol
+      let col = -1;
+      for (let c = 0; c < COLS; c++) { if (g[index][c] === null) { col = c; break; } }
+      if (col === -1) return;
+      g[index][col] = color;
+    }
+
     const g2 = applyGravity(g, dir);
 
     setLastDir(dir);
@@ -280,6 +315,32 @@ export default function GravityPuzzle() {
 
       {/* ── BOARD ── */}
       <div style={{ position: "relative", padding: "0 16px" }}>
+        {/* 上から置く（down）インジケーター */}
+        {nextDir === "down" && (
+          <div style={{ display: "flex", gap: `${GAP}px`, padding: "0 6px", marginBottom: "3px" }}>
+            {Array.from({ length: COLS }).map((_, c) => (
+              <div key={c} onClick={() => placeBall(c)} style={{
+                width: `${CELL}px`, height: "6px", borderRadius: "3px",
+                background: DIR_COLOR["down"] + "99",
+                cursor: gameOver || processing ? "default" : "pointer",
+              }} />
+            ))}
+          </div>
+        )}
+        <div style={{ display: "flex", alignItems: "center", gap: "3px" }}>
+          {/* 右から置く（left）インジケーター */}
+          {nextDir === "left" && (
+            <div style={{ display: "flex", flexDirection: "column", gap: `${GAP}px`, padding: "6px 0", marginRight: "3px" }}>
+              {Array.from({ length: ROWS }).map((_, r) => (
+                <div key={r} onClick={() => placeBall(r)} style={{
+                  width: "6px", height: `${CELL}px`, borderRadius: "3px",
+                  background: DIR_COLOR["left"] + "99",
+                  cursor: gameOver || processing ? "default" : "pointer",
+                }} />
+              ))}
+            </div>
+          )}
+
         <div
           style={{
             display: "grid",
@@ -298,11 +359,13 @@ export default function GravityPuzzle() {
             row.map((cell, c) => {
               const key = `${r},${c}`;
               const isClearing = clearing.has(key);
+              // 列クリック(down/up)か行クリック(left/right)か
+              const clickIndex = (nextDir === "down" || nextDir === "up") ? c : r;
               return (
                 <div
                   key={key}
                   className={isClearing ? "clearing" : ""}
-                  onClick={() => placeBall(c)}
+                  onClick={() => placeBall(clickIndex)}
                   style={{
                     width: `${CELL}px`, height: `${CELL}px`,
                     borderRadius: cell ? "50%" : "5px",
@@ -373,6 +436,33 @@ export default function GravityPuzzle() {
             </div>
           )}
         </div>
+
+          {/* 左から置く（right）インジケーター */}
+          {nextDir === "right" && (
+            <div style={{ display: "flex", flexDirection: "column", gap: `${GAP}px`, padding: "6px 0", marginLeft: "3px" }}>
+              {Array.from({ length: ROWS }).map((_, r) => (
+                <div key={r} onClick={() => placeBall(r)} style={{
+                  width: "6px", height: `${CELL}px`, borderRadius: "3px",
+                  background: DIR_COLOR["right"] + "99",
+                  cursor: gameOver || processing ? "default" : "pointer",
+                }} />
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* 下から置く（up）インジケーター */}
+        {nextDir === "up" && (
+          <div style={{ display: "flex", gap: `${GAP}px`, padding: "0 6px", marginTop: "3px" }}>
+            {Array.from({ length: COLS }).map((_, c) => (
+              <div key={c} onClick={() => placeBall(c)} style={{
+                width: `${CELL}px`, height: "6px", borderRadius: "3px",
+                background: DIR_COLOR["up"] + "99",
+                cursor: gameOver || processing ? "default" : "pointer",
+              }} />
+            ))}
+          </div>
+        )}
       </div>
 
       {/* ── BOTTOM BAR ── */}
@@ -382,7 +472,7 @@ export default function GravityPuzzle() {
         display: "flex", gap: "10px", alignItems: "center",
       }}>
         <div style={{ ...infoCardStyle, flex: 1, fontSize: "11px", color: "#777", lineHeight: 1.7, textAlign: "center" }}>
-          列をタップしてボール配置　縦<span style={{ color: "#FFD32A" }}>4個</span>同色で消去　連鎖でスコア倍増
+          重力の反対側からタップして配置　縦/横<span style={{ color: "#FFD32A" }}>4個</span>同色で消去　連鎖でスコア倍増
         </div>
         <button onClick={reset} style={{
           padding: "10px 18px",
