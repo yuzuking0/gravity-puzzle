@@ -234,12 +234,12 @@ export default function GravityPuzzle() {
         {/* Score */}
         <div style={topCardStyle}>
           <div style={topLabelStyle}>SCORE</div>
-          <div style={{ color: "#fff", fontSize: "20px", fontWeight: 900, lineHeight: 1 }}>{score.toLocaleString()}</div>
+          <div style={{ color: "#fff", fontSize: "30px", fontWeight: 1000, lineHeight: 1 }}>{score.toLocaleString()}</div>
         </div>
 
         {/* Title */}
         <div style={{
-          fontSize: "15px", fontWeight: 900, letterSpacing: "1px", textAlign: "center", flex: 1,
+          fontSize: "20px", fontWeight: 1000, letterSpacing: "1px", textAlign: "center", flex: 1,
           background: `linear-gradient(90deg, ${BALL_COLORS.join(",")})`,
           WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
         }}>GRAVITY<br/>PUZZLE</div>
